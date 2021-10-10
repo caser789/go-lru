@@ -14,7 +14,7 @@ type Cache struct {
 	size      int
 	evictList *list.List
 	items     map[interface{}]*list.Element
-	lock      sync.Mutex
+	lock      sync.RWMutex
 }
 
 // entry is used to hold a value in the evictList
@@ -98,10 +98,10 @@ func (c *Cache) Purge() {
 
 // Returns the keys of itmes in the cache.
 func (c *Cache) Keys() []interface{} {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 
-	keys := make([]interface{}, c.size)
+	keys := make([]interface{}, len(c.items))
 	i := 0
 	for k := range c.items {
 		keys[i] = k
@@ -128,7 +128,7 @@ func (c *Cache) removeElement(e *list.Element) {
 
 // Len returns the number of items in the cache.
 func (c *Cache) Len() int {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+	c.lock.RLock()
+	defer c.lock.RUnlock()
 	return c.evictList.Len()
 }
