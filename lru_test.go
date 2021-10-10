@@ -84,3 +84,41 @@ func TestLRUAdd(t *testing.T) {
 		t.Errorf("should have an eviction")
 	}
 }
+
+// test that Contains doesn't update recent-ness
+func TestLRUContains(t *testing.T) {
+	l, err := New(2)
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+
+	l.Add(1, 1)
+	l.Add(2, 2)
+	if !l.Contains(1) {
+		t.Errorf("1 should be contained")
+	}
+
+	l.Add(3, 3)
+	if l.Contains(1) {
+		t.Errorf("Contains should not have updated recent-ness of 1")
+	}
+}
+
+// test that Peek doesn't update recent-ness
+func TestLRUPeek(t *testing.T) {
+	l, err := New(2)
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+
+	l.Add(1, 1)
+	l.Add(2, 2)
+	if v, ok := l.Peek(1); !ok || v != 1 {
+		t.Errorf("1 should be set to 1: %v, %v", v, ok)
+	}
+
+	l.Add(3, 3)
+	if l.Contains(1) {
+		t.Errorf("should not have updated recent-ness of 1")
+	}
+}
