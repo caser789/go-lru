@@ -33,4 +33,7 @@ type LRUCache interface {
 
 	// Clear all cache entries
 	Purge()
+
+	// Resizes cache, returning number evicted
+	Resize(int) int
 }
