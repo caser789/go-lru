@@ -128,3 +128,19 @@ func (c *Cache) GetOldest() (key interface{}, value interface{}, ok bool) {
 	c.lock.Unlock()
 	return
 }
+
+// PeekOrAdd checks if a key is in the cache without updating the
+// recent-ness or deleting it for being stale, and if not, adds the value.
+// Returns whether found and whether an eviction occurred.
+func (c *Cache) PeekOrAdd(key, value interface{}) (previous interface{}, ok, evicted bool) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	previous, ok = c.lru.Peek(key)
+	if ok {
+		return previous, true, false
+	}
+
+	evicted = c.lru.Add(key, value)
+	return nil, false, evicted
+}
