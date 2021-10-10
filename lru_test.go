@@ -21,4 +21,17 @@ func TestLRU(t *testing.T) {
 			t.Fatalf("should be evicted")
 		}
 	}
+	for i := 128; i < 256; i++ {
+		_, ok := l.Get(i)
+		if !ok {
+			t.Fatalf("should not be evicted")
+		}
+	}
+	for i := 128; i < 192; i++ {
+		l.Remove(i)
+		_, ok := l.Get(i)
+		if ok {
+			t.Fatalf("should be deleted")
+		}
+	}
 }
