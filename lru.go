@@ -55,6 +55,17 @@ func (c *Cache) Len() int {
 	return c.evictList.Len()
 }
 
+func (c *Cache) Get(key interface{}) (value interface{}, ok bool) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if ent, ok := c.items[key]; ok {
+		c.evictList.MoveToFront(ent)
+		return ent.Value.(*entry).value, true
+	}
+	return
+}
+
 func (c *Cache) removeOldest() {
 	ent := c.evictList.Back()
 	if ent != nil {

@@ -15,4 +15,10 @@ func TestLRU(t *testing.T) {
 	if l.Len() != 128 {
 		t.Fatalf("bad len: %v", l.Len())
 	}
+	for i := 0; i < 128; i++ {
+		_, ok := l.Get(i)
+		if ok {
+			t.Fatalf("should be evicted")
+		}
+	}
 }
