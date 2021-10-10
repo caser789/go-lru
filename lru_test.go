@@ -15,6 +15,11 @@ func TestLRU(t *testing.T) {
 	if l.Len() != 128 {
 		t.Fatalf("bad len: %v", l.Len())
 	}
+	for _, k := range l.Keys() {
+		if v, ok := l.Get(k); !ok || v != k {
+			t.Fatalf("bad key: %v", k)
+		}
+	}
 	for i := 0; i < 128; i++ {
 		_, ok := l.Get(i)
 		if ok {
