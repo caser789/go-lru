@@ -88,6 +88,14 @@ func (c *Cache) RemoveOldest() {
 	c.removeOldest()
 }
 
+// Purge is used to completely clear the cache
+func (c *Cache) Purge() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	c.evictList = list.New()
+	c.items = make(map[interface{}]*list.Element, c.size)
+}
+
 // removeOldest removes the oldest item from the cache.
 func (c *Cache) removeOldest() {
 	ent := c.evictList.Back()
