@@ -96,9 +96,14 @@ func (c *Cache) RemoveOldest() {
 
 // Purge is used to completely clear the cache
 func (c *Cache) Purge() {
-	// Evict each element in the list.
-	for c.Len() > 0 {
-		c.RemoveOldest()
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	e := c.evictList.Front()
+	for e != nil {
+		n := e.Next()
+		c.removeElement(e)
+		e = n
 	}
 }
 
