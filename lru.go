@@ -29,3 +29,35 @@ func New(size int) (*Cache, error) {
 	}
 	return c, nil
 }
+
+func (c *Cache) Add(key, value interface{}) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if ent, ok := c.items[key]; ok {
+		c.evictList.MoveToFront(ent)
+		ent.Value.(*entry).value = value
+		return
+	}
+
+	ent := &entry{key, value}
+	entry := c.evictList.PushFront(ent)
+	c.items[key] = entry
+
+	if c.evictList.Len() > c.size {
+		c.removeOldest()
+	}
+}
+
+func (c *Cache) removeOldest() {
+	ent := c.evictList.Back()
+	if ent != nil {
+		c.removeElement(ent)
+	}
+}
+
+func (c *Cache) removeElement(e *list.Element) {
+	c.evictList.Remove(e)
+	kv := e.Value.(*entry)
+	delete(c.items, kv.key)
+}

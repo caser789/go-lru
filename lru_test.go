@@ -5,8 +5,11 @@ import (
 )
 
 func TestLRU(t *testing.T) {
-	_, err := New(128)
+	l, err := New(128)
 	if err != nil {
 		t.Fatalf("err: %v", err)
+	}
+	for i := 0; i < 256; i++ {
+		l.Add(i, i)
 	}
 }
