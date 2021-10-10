@@ -68,7 +68,7 @@ func TestLRU(t *testing.T) {
 	}
 }
 
-// test that Add return true/false if an eviction occured
+// test that Add returns true/false if an eviction occured
 func TestLRUAdd(t *testing.T) {
 	evictCounter := 0
 	onEvicted := func(k interface{}, v interface{}) {
@@ -107,25 +107,6 @@ func TestLRUContains(t *testing.T) {
 	}
 }
 
-// test that Peek doesn't update recent-ness
-func TestLRUPeek(t *testing.T) {
-	l, err := New(2)
-	if err != nil {
-		t.Fatalf("err: %v", err)
-	}
-
-	l.Add(1, 1)
-	l.Add(2, 2)
-	if v, ok := l.Peek(1); !ok || v != 1 {
-		t.Errorf("1 should be set to 1: %v, %v", v, ok)
-	}
-
-	l.Add(3, 3)
-	if l.Contains(1) {
-		t.Errorf("should not have updated recent-ness of 1")
-	}
-}
-
 // test that Contains doesn't update recent-ness
 func TestLRUContainsOrAdd(t *testing.T) {
 	l, err := New(2)
@@ -153,5 +134,24 @@ func TestLRUContainsOrAdd(t *testing.T) {
 	}
 	if !l.Contains(1) {
 		t.Errorf("now 1 should be contained")
+	}
+}
+
+// test that Peek doesn't update recent-ness
+func TestLRUPeek(t *testing.T) {
+	l, err := New(2)
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+
+	l.Add(1, 1)
+	l.Add(2, 2)
+	if v, ok := l.Peek(1); !ok || v != 1 {
+		t.Errorf("1 should be set to 1: %v, %v", v, ok)
+	}
+
+	l.Add(3, 3)
+	if l.Contains(1) {
+		t.Errorf("should not have updated recent-ness of 1")
 	}
 }

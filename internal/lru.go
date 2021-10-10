@@ -102,8 +102,24 @@ func (c *LRU) Remove(key interface{}) {
 }
 
 // RemoveOldest removes the oldest item from the cache.
-func (c *LRU) RemoveOldest() {
-	c.removeOldest()
+func (c *LRU) RemoveOldest() (interface{}, interface{}, bool) {
+	ent := c.evictList.Back()
+	if ent != nil {
+		c.removeElement(ent)
+		kv := ent.Value.(*entry)
+		return kv.key, kv.value, true
+	}
+	return nil, nil, false
+}
+
+// GetOldest returns the oldest entry
+func (c *LRU) GetOldest() (interface{}, interface{}, bool) {
+	ent := c.evictList.Back()
+	if ent != nil {
+		kv := ent.Value.(*entry)
+		return kv.key, kv.value, true
+	}
+	return nil, nil, false
 }
 
 // Keys returns a slice of the keys in the cache, from oldest to newest.
