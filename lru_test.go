@@ -5,6 +5,9 @@ import "testing"
 func TestLRU(t *testing.T) {
 	evictCounter := 0
 	onEvicted := func(k interface{}, v interface{}) {
+		if k != v {
+			t.Fatalf("Evict values not equal (%v!=%v)", k, v)
+		}
 		evictCounter += 1
 	}
 	l, err := NewWithEvict(128, onEvicted)
@@ -120,5 +123,35 @@ func TestLRUPeek(t *testing.T) {
 	l.Add(3, 3)
 	if l.Contains(1) {
 		t.Errorf("should not have updated recent-ness of 1")
+	}
+}
+
+// test that Contains doesn't update recent-ness
+func TestLRUContainsOrAdd(t *testing.T) {
+	l, err := New(2)
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+
+	l.Add(1, 1)
+	l.Add(2, 2)
+	contains, evict := l.ContainsOrAdd(1, 1)
+	if !contains {
+		t.Errorf("1 should be contained")
+	}
+	if evict {
+		t.Errorf("nothing should be evicted here")
+	}
+
+	l.Add(3, 3)
+	contains, evict = l.ContainsOrAdd(1, 1)
+	if contains {
+		t.Errorf("1 should not have been contained")
+	}
+	if !evict {
+		t.Errorf("an eviction should have occurred")
+	}
+	if !l.Contains(1) {
+		t.Errorf("now 1 should be contained")
 	}
 }
