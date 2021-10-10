@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/caser789/go-lru/internal"
+	"github.com/caser789/go-lru/simplelru"
 )
 
 const (
@@ -20,7 +20,7 @@ const (
 // TwoQueueCache is a thread-safe fixed size 2Q cache.
 // 2Q is an enhancement over the standard LRU cache
 // in that it tracks both frequently and recently used
-// entries seperately. This avoids a burst in access to new
+// entries separately. This avoids a burst in access to new
 // entries from evicting frequently used entries. It adds some
 // additional tracking overhead to the standard LRU cache, and is
 // computationally about 2x the cost, and adds some metadata over
@@ -30,9 +30,9 @@ type TwoQueueCache struct {
 	size       int
 	recentSize int
 
-	recent      *internal.LRU
-	frequent    *internal.LRU
-	recentEvict *internal.LRU
+	recent      simplelru.LRUCache
+	frequent    simplelru.LRUCache
+	recentEvict simplelru.LRUCache
 	lock        sync.RWMutex
 }
 
@@ -60,15 +60,15 @@ func New2QParams(size int, recentRatio float64, ghostRatio float64) (*TwoQueueCa
 	evictSize := int(float64(size) * ghostRatio)
 
 	// Allocate the LRUs
-	recent, err := internal.NewLRU(size, nil)
+	recent, err := simplelru.NewLRU(size, nil)
 	if err != nil {
 		return nil, err
 	}
-	frequent, err := internal.NewLRU(size, nil)
+	frequent, err := simplelru.NewLRU(size, nil)
 	if err != nil {
 		return nil, err
 	}
-	recentEvict, err := internal.NewLRU(evictSize, nil)
+	recentEvict, err := simplelru.NewLRU(evictSize, nil)
 	if err != nil {
 		return nil, err
 	}

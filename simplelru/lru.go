@@ -1,4 +1,4 @@
-package internal
+package simplelru
 
 import (
 	"container/list"
@@ -23,7 +23,7 @@ type entry struct {
 }
 
 // NewLRU constructs an LRU of the given size
-func NewLRU(size int, onEvict EvictCallback) (*LRU, error) {
+func NewLRU(size int, onEvict EvictCallback) (LRUCache, error) {
 	if size <= 0 {
 		return nil, errors.New("Must provide a positive size")
 	}
@@ -47,7 +47,7 @@ func (c *LRU) Purge() {
 	c.evictList.Init()
 }
 
-// Add adds a value to the cache.  Returns true if an eviction occured.
+// Add adds a value to the cache.  Returns true if an eviction occurred.
 func (c *LRU) Add(key, value interface{}) bool {
 	// Check for existing item
 	if ent, ok := c.items[key]; ok {
@@ -78,27 +78,31 @@ func (c *LRU) Get(key interface{}) (value interface{}, ok bool) {
 	return
 }
 
-// Check if a key is in the cache, without updating the recent-ness
+// Contains check if a key is in the cache, without updating the recent-ness
 // or deleting it for being stale.
 func (c *LRU) Contains(key interface{}) (ok bool) {
 	_, ok = c.items[key]
 	return ok
 }
 
-// Returns the key value (or undefined if not found) without updating
+// Peek returns the key value (or undefined if not found) without updating
 // the "recently used"-ness of the key.
 func (c *LRU) Peek(key interface{}) (value interface{}, ok bool) {
-	if ent, ok := c.items[key]; ok {
+	var ent *list.Element
+	if ent, ok = c.items[key]; ok {
 		return ent.Value.(*entry).value, true
 	}
 	return nil, ok
 }
 
-// Remove removes the provided key from the cache.
-func (c *LRU) Remove(key interface{}) {
+// Remove removes the provided key from the cache, returning if the
+// key was contained.
+func (c *LRU) Remove(key interface{}) bool {
 	if ent, ok := c.items[key]; ok {
 		c.removeElement(ent)
+		return true
 	}
+	return false
 }
 
 // RemoveOldest removes the oldest item from the cache.
@@ -125,11 +129,9 @@ func (c *LRU) GetOldest() (interface{}, interface{}, bool) {
 // Keys returns a slice of the keys in the cache, from oldest to newest.
 func (c *LRU) Keys() []interface{} {
 	keys := make([]interface{}, len(c.items))
-	ent := c.evictList.Back()
 	i := 0
-	for ent != nil {
+	for ent := c.evictList.Back(); ent != nil; ent = ent.Prev() {
 		keys[i] = ent.Value.(*entry).key
-		ent = ent.Prev()
 		i++
 	}
 	return keys

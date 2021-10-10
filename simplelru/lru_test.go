@@ -1,4 +1,4 @@
-package internal
+package simplelru
 
 import "testing"
 
@@ -8,7 +8,7 @@ func TestLRU(t *testing.T) {
 		if k != v {
 			t.Fatalf("Evict values not equal (%v!=%v)", k, v)
 		}
-		evictCounter += 1
+		evictCounter++
 	}
 	l, err := NewLRU(128, onEvicted)
 	if err != nil {
@@ -44,8 +44,15 @@ func TestLRU(t *testing.T) {
 		}
 	}
 	for i := 128; i < 192; i++ {
-		l.Remove(i)
-		_, ok := l.Get(i)
+		ok := l.Remove(i)
+		if !ok {
+			t.Fatalf("should be contained")
+		}
+		ok = l.Remove(i)
+		if ok {
+			t.Fatalf("should not be contained")
+		}
+		_, ok = l.Get(i)
 		if ok {
 			t.Fatalf("should be deleted")
 		}
@@ -101,11 +108,11 @@ func TestLRU_GetOldest_RemoveOldest(t *testing.T) {
 	}
 }
 
-// Test that Add returns true/false if an eviction occured
+// Test that Add returns true/false if an eviction occurred
 func TestLRU_Add(t *testing.T) {
 	evictCounter := 0
 	onEvicted := func(k interface{}, v interface{}) {
-		evictCounter += 1
+		evictCounter++
 	}
 
 	l, err := NewLRU(1, onEvicted)

@@ -3,23 +3,26 @@ package lru
 import (
 	"sync"
 
-	"github.com/caser789/go-lru/internal"
+	"github.com/caser789/go-lru/simplelru"
 )
 
 // ARCCache is a thread-safe fixed size Adaptive Replacement Cache (ARC).
 // ARC is an enhancement over the standard LRU cache in that tracks both
 // frequency and recency of use. This avoids a burst in access to new
 // entries from evicting the frequently used older entries. It adds some
-// additional tracking overhead to a standard LRU cache.
+// additional tracking overhead to a standard LRU cache, computationally
+// it is roughly 2x the cost, and the extra memory overhead is linear
+// with the size of the cache. ARC has been patented by IBM, but is
+// similar to the TwoQueueCache (2Q) which requires setting parameters.
 type ARCCache struct {
 	size int // Size is the total capacity of the cache
 	p    int // P is the dynamic preference towards T1 or T2
 
-	t1 *internal.LRU // T1 is the LRU for recently accessed items
-	b1 *internal.LRU // B1 is the LRU for evictions from t1
+	t1 simplelru.LRUCache // T1 is the LRU for recently accessed items
+	b1 simplelru.LRUCache // B1 is the LRU for evictions from t1
 
-	t2 *internal.LRU // T2 is the LRU for frequently accessed items
-	b2 *internal.LRU // B2 is the LRU for evictions from t2
+	t2 simplelru.LRUCache // T2 is the LRU for frequently accessed items
+	b2 simplelru.LRUCache // B2 is the LRU for evictions from t2
 
 	lock sync.RWMutex
 }
@@ -27,19 +30,19 @@ type ARCCache struct {
 // NewARC creates an ARC of the given size
 func NewARC(size int) (*ARCCache, error) {
 	// Create the sub LRUs
-	b1, err := internal.NewLRU(size, nil)
+	b1, err := simplelru.NewLRU(size, nil)
 	if err != nil {
 		return nil, err
 	}
-	b2, err := internal.NewLRU(size, nil)
+	b2, err := simplelru.NewLRU(size, nil)
 	if err != nil {
 		return nil, err
 	}
-	t1, err := internal.NewLRU(size, nil)
+	t1, err := simplelru.NewLRU(size, nil)
 	if err != nil {
 		return nil, err
 	}
-	t2, err := internal.NewLRU(size, nil)
+	t2, err := simplelru.NewLRU(size, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -61,8 +64,8 @@ func (c *ARCCache) Get(key interface{}) (interface{}, bool) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	// Check if the value is contained in T1 (recent), and potentially
-	// promote it to frequent T2
+	// Ff the value is contained in T1 (recent), then
+	// promote it to T2 (frequent)
 	if val, ok := c.t1.Peek(key); ok {
 		c.t1.Remove(key)
 		c.t2.Add(key, val)
@@ -70,8 +73,7 @@ func (c *ARCCache) Get(key interface{}) (interface{}, bool) {
 	}
 
 	// Check if the value is contained in T2 (frequent)
-	val, ok := c.t2.Get(key)
-	if ok {
+	if val, ok := c.t2.Get(key); ok {
 		return val, ok
 	}
 
@@ -98,7 +100,7 @@ func (c *ARCCache) Add(key, value interface{}) {
 		return
 	}
 
-	// Check if this value was recently evitcted as part of the
+	// Check if this value was recently evicted as part of the
 	// recently used list
 	if c.b1.Contains(key) {
 		// T1 set is too small, increase P appropriately
@@ -207,14 +209,22 @@ func (c *ARCCache) Keys() []interface{} {
 	return append(k1, k2...)
 }
 
-// Remove is used to perge a key from the cache
+// Remove is used to purge a key from the cache
 func (c *ARCCache) Remove(key interface{}) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	c.t1.Remove(key)
-	c.t2.Remove(key)
-	c.b1.Remove(key)
-	c.b2.Remove(key)
+	if c.t1.Remove(key) {
+		return
+	}
+	if c.t2.Remove(key) {
+		return
+	}
+	if c.b1.Remove(key) {
+		return
+	}
+	if c.b2.Remove(key) {
+		return
+	}
 }
 
 // Purge is used to clear the cache
