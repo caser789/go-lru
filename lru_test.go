@@ -12,4 +12,7 @@ func TestLRU(t *testing.T) {
 	for i := 0; i < 256; i++ {
 		l.Add(i, i)
 	}
+	if l.Len() != 128 {
+		t.Fatalf("bad len: %v", l.Len())
+	}
 }

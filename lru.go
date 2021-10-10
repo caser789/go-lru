@@ -49,6 +49,12 @@ func (c *Cache) Add(key, value interface{}) {
 	}
 }
 
+func (c *Cache) Len() int {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	return c.evictList.Len()
+}
+
 func (c *Cache) removeOldest() {
 	ent := c.evictList.Back()
 	if ent != nil {
