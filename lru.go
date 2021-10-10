@@ -120,3 +120,11 @@ func (c *Cache) Resize(size int) (evicted int) {
 	c.lock.Unlock()
 	return evicted
 }
+
+// GetOldest returns the oldest entry
+func (c *Cache) GetOldest() (key interface{}, value interface{}, ok bool) {
+	c.lock.Lock()
+	key, value, ok = c.lru.GetOldest()
+	c.lock.Unlock()
+	return
+}
