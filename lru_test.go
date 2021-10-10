@@ -1,8 +1,6 @@
 package lru
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestLRU(t *testing.T) {
 	evictCounter := 0
@@ -13,17 +11,20 @@ func TestLRU(t *testing.T) {
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
+
 	for i := 0; i < 256; i++ {
 		l.Add(i, i)
 	}
 	if l.Len() != 128 {
 		t.Fatalf("bad len: %v", l.Len())
 	}
+
 	if evictCounter != 128 {
 		t.Fatalf("bad evict count: %v", evictCounter)
 	}
-	for _, k := range l.Keys() {
-		if v, ok := l.Get(k); !ok || v != k {
+
+	for i, k := range l.Keys() {
+		if v, ok := l.Get(k); !ok || v != k || v != i+128 {
 			t.Fatalf("bad key: %v", k)
 		}
 	}
@@ -46,6 +47,15 @@ func TestLRU(t *testing.T) {
 			t.Fatalf("should be deleted")
 		}
 	}
+
+	l.Get(192) // expect 192 to be last key in l.Keys()
+
+	for i, k := range l.Keys() {
+		if (i < 63 && k != i+193) || (i == 63 && k != 192) {
+			t.Fatalf("out of order key: %v", k)
+		}
+	}
+
 	l.Purge()
 	if l.Len() != 0 {
 		t.Fatalf("bad len: %v", l.Len())

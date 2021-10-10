@@ -116,9 +116,11 @@ func (c *Cache) Keys() []interface{} {
 	defer c.lock.RUnlock()
 
 	keys := make([]interface{}, len(c.items))
+	ent := c.evictList.Back()
 	i := 0
-	for k := range c.items {
-		keys[i] = k
+	for ent != nil {
+		keys[i] = ent.Value.(*entry).key
+		ent = ent.Prev()
 		i++
 	}
 
