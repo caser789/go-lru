@@ -5,13 +5,13 @@ import (
 )
 
 func TestLRU(t *testing.T) {
-	l, err := New(128)
+	evictCounter := 0
+	onEvicted := func(k interface{}, v interface{}) {
+		evictCounter += 1
+	}
+	l, err := NewWithEvict(128, onEvicted)
 	if err != nil {
 		t.Fatalf("err: %v", err)
-	}
-	evictCounter := 0
-	l.OnEvicted = func(k interface{}, v interface{}) {
-		evictCounter += 1
 	}
 	for i := 0; i < 256; i++ {
 		l.Add(i, i)
